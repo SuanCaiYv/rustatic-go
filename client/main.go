@@ -26,17 +26,23 @@ func main() {
 	}
 	defer ctrlConn.Close()
 	defer dataConn.Close()
-	filepath := "/Users/slma/Downloads/kafka-ui-api-v0.7.1.jar"
+	// filepath := "/Users/joker/Downloads/Telegram.dmg"
 	sessionId, err := login("dev-user", "123456", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
 	initDataConn(sessionId, dataConn)
-	fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
+	//fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println(fileId)
+	//upload0(filepath, dataConn)
+	filename, err := download(sessionId, "M2ZiZWFhNDEtNGM5Ni00NDAxLWI5YmMtYWY3MDJiNTBjNjYz", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(fileId)
+	download0(filename, dataConn)
 }
 
 func initDataConn(sessionId string, conn net.Conn) {
@@ -116,6 +122,73 @@ func upload(sessionId string, filepath string, ctrlConn net.Conn, dataConn net.C
 		return "", fmt.Errorf(str[4:])
 	} else {
 		return str[3:], nil
+	}
+}
+
+func upload0(filepath string, dataConn net.Conn) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	buffer := make([]byte, 4096)
+	for {
+		n, err := file.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+		if n == 0 {
+			break
+		}
+		dataConn.Write(buffer[:n])
+	}
+}
+
+func download(sessionId string, fileId string, ctrlConn net.Conn) (string, error) {
+	file := struct {
+		SessionId string `json:"session_id"`
+		FileId    string `json:"link"`
+	}{
+		SessionId: sessionId,
+		FileId:    fileId,
+	}
+	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
+	req := jsonMarshal(file)
+	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
+	ctrlConn.Write(req)
+	resp := readToLine(ctrlConn)
+	str := string(resp)
+	if strings.HasPrefix(str, "err ") {
+		return "", fmt.Errorf(str[4:])
+	} else {
+		return str[3:], nil
+	}
+}
+
+func download0(filename string, dataConn net.Conn) {
+	file, err := os.OpenFile("./"+filename, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	buffer := make([]byte, 4096)
+	for {
+		n, err := dataConn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+		if n == 0 {
+			break
+		}
+		file.Write(buffer[:n])
 	}
 }
 
