@@ -8,7 +8,9 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -16,33 +18,36 @@ func main() {
 		InsecureSkipVerify: true,
 	}
 
-	ctrlConn, err := tls.Dial("tcp", "127.0.0.1:8190", config)
+	ctrlConn, err := tls.Dial("tcp", "106.54.221.36:8190", config)
 	if err != nil {
 		panic(fmt.Sprintf("control server connect error: %s", err))
 	}
-	dataConn, err := net.Dial("tcp", "127.0.0.1:8191")
+	dataConn, err := net.Dial("tcp", "106.54.221.36:8191")
 	if err != nil {
 		panic(fmt.Sprintf("data server connect error: %s", err))
 	}
 	defer ctrlConn.Close()
 	defer dataConn.Close()
-	// filepath := "/Users/joker/Downloads/Telegram.dmg"
 	sessionId, err := login("dev-user", "123456", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
 	initDataConn(sessionId, dataConn)
+	//filepath := "/Users/slma/Downloads/mac.zip"
 	//fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
 	//if err != nil {
 	//	panic(err)
 	//}
 	//fmt.Println(fileId)
 	//upload0(filepath, dataConn)
-	filename, err := download(sessionId, "M2ZiZWFhNDEtNGM5Ni00NDAxLWI5YmMtYWY3MDJiNTBjNjYz", ctrlConn)
+	filename, size, err := download(sessionId, "ZGJmNmI2ZDktZGM5Ni00OTJkLTk5ZmMtMWI3MWUzY2JhZTRk", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
-	download0(filename, dataConn)
+	fmt.Println(size)
+	t := time.Now()
+	download0(filename, dataConn, size)
+	fmt.Println("speed: ", float64(size)/1024/1024/time.Now().Sub(t).Seconds(), "MB/s")
 }
 
 func initDataConn(sessionId string, conn net.Conn) {
@@ -148,7 +153,7 @@ func upload0(filepath string, dataConn net.Conn) {
 	}
 }
 
-func download(sessionId string, fileId string, ctrlConn net.Conn) (string, error) {
+func download(sessionId string, fileId string, ctrlConn net.Conn) (string, int, error) {
 	file := struct {
 		SessionId string `json:"session_id"`
 		FileId    string `json:"link"`
@@ -163,19 +168,22 @@ func download(sessionId string, fileId string, ctrlConn net.Conn) (string, error
 	resp := readToLine(ctrlConn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(str[4:])
+		return "", 0, fmt.Errorf(str[4:])
 	} else {
-		return str[3:], nil
+		arr := strings.Split(str[3:], " ")
+		size, _ := strconv.Atoi(arr[1])
+		return arr[0], size, nil
 	}
 }
 
-func download0(filename string, dataConn net.Conn) {
+func download0(filename string, dataConn net.Conn, size int) {
 	file, err := os.OpenFile("./"+filename, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
-	buffer := make([]byte, 4096)
+	buffer := make([]byte, 4096*32)
+	total := 0
 	for {
 		n, err := dataConn.Read(buffer)
 		if err != nil {
@@ -185,10 +193,12 @@ func download0(filename string, dataConn net.Conn) {
 				panic(err)
 			}
 		}
-		if n == 0 {
+		total += n
+		// fmt.Println(n, total)
+		file.Write(buffer[:n])
+		if total == size {
 			break
 		}
-		file.Write(buffer[:n])
 	}
 }
 
