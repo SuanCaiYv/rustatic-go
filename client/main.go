@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/binary"
 	"encoding/json"
@@ -69,7 +70,7 @@ func sign(username string, password string, conn net.Conn) (string, error) {
 	resp := readToLine(conn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(str[4:])
+		return "", fmt.Errorf(string(resp[4:]))
 	} else {
 		return str[3:], nil
 	}
@@ -90,7 +91,7 @@ func login(username string, password string, conn net.Conn) (string, error) {
 	resp := readToLine(conn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(str[4:])
+		return "", fmt.Errorf(string(resp[4:]))
 	} else {
 		return str[3:], nil
 	}
@@ -124,7 +125,7 @@ func upload(sessionId string, filepath string, ctrlConn net.Conn, dataConn net.C
 	resp := readToLine(ctrlConn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(str[4:])
+		return "", fmt.Errorf(string(resp[4:]))
 	} else {
 		return str[3:], nil
 	}
@@ -168,7 +169,7 @@ func download(sessionId string, fileId string, ctrlConn net.Conn) (string, int, 
 	resp := readToLine(ctrlConn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
-		return "", 0, fmt.Errorf(str[4:])
+		return "", 0, fmt.Errorf(string(resp[4:]))
 	} else {
 		arr := strings.Split(str[3:], " ")
 		size, _ := strconv.Atoi(arr[1])
@@ -258,5 +259,26 @@ func readToLine(reader io.Reader) []byte {
 			}
 		}
 		idx += n
+	}
+}
+
+func listFiles(username string, ctrlConn net.Conn) ([]map[string]string, error) {
+	req := []byte(username)
+	binary.Write(ctrlConn, binary.BigEndian, uint16(6))
+	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
+	ctrlConn.Write(req)
+	resp := readToLine(ctrlConn)
+	str := string(resp[0:3])
+	if strings.HasPrefix(str, "ok ") {
+		var files []map[string]string
+		ll := bytes.Split(resp[3:], []byte(" "))
+		for i := 0; i < len(ll); i += 6 {
+			for j := 0; j < 6; j++ {
+				files = append(files, map[string]string{string(ll[i+j]): string(ll[i+j+1])})
+			}
+		}
+		return files, nil
+	} else {
+		return nil, fmt.Errorf(string(resp[4:]))
 	}
 }
