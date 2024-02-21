@@ -33,21 +33,21 @@ func main() {
 		panic(err)
 	}
 	initDataConn(sessionId, dataConn)
-	//filepath := "/Users/slma/Downloads/mac.zip"
+	//filepath := "/Users/slma/Downloads/dotnet-runtime-7.0.13-osx-arm64.pkg"
 	//fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
 	//if err != nil {
 	//	panic(err)
 	//}
 	//fmt.Println(fileId)
 	//upload0(filepath, dataConn)
-	filename, size, err := download(sessionId, "ZGJmNmI2ZDktZGM5Ni00OTJkLTk5ZmMtMWI3MWUzY2JhZTRk", ctrlConn)
+	filename, size, err := download(sessionId, "ODMwYjVlN2ItMTMxOS00YjM3LWI4MGEtN2U4ZTk2ZTU4ZDE2", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(size)
 	t := time.Now()
-	download0(filename, dataConn, size)
-	fmt.Println("speed: ", float64(size)/1024/1024/time.Now().Sub(t).Seconds(), "MB/s")
+	download1(filename, dataConn, size)
+	fmt.Printf("speed: %.4f MB/s\n", float64(size)/1024/1024/time.Now().Sub(t).Seconds())
 }
 
 func initDataConn(sessionId string, conn net.Conn) {
@@ -161,7 +161,7 @@ func download(sessionId string, fileId string, ctrlConn net.Conn) (string, int, 
 		SessionId: sessionId,
 		FileId:    fileId,
 	}
-	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
+	binary.Write(ctrlConn, binary.BigEndian, uint16(5))
 	req := jsonMarshal(file)
 	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
 	ctrlConn.Write(req)
@@ -199,6 +199,37 @@ func download0(filename string, dataConn net.Conn, size int) {
 		if total == size {
 			break
 		}
+	}
+}
+
+func download1(_filename string, dataConn net.Conn, size int) {
+	buffer := make([]byte, 1024*1024*4)
+	total := 0
+	go func() {
+		for {
+			if total == size {
+				break
+			}
+			time.Sleep(time.Second)
+			fmt.Printf("process percentage: %6.2f%%\n", float64(total)/float64(size)*100)
+		}
+	}()
+	for {
+		n, err := dataConn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+		total += n
+		if total == size {
+			break
+		}
+	}
+	if total != size {
+		println("total:", total, "size:", size)
 	}
 }
 
