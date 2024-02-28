@@ -34,14 +34,14 @@ func main() {
 		panic(err)
 	}
 	initDataConn(sessionId, dataConn)
-	//filepath := "/Users/slma/Downloads/网易云音乐.zip"
+	//filepath := "/Users/joker/Downloads/DxO_PureRaw_v3.dmg"
 	//fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
 	//if err != nil {
 	//	panic(err)
 	//}
 	//fmt.Println(fileId)
 	//upload0(filepath, dataConn)
-	filename, size, err := download(sessionId, "MmZjMTk2MTMtNWRmMy00ZmUzLWIzNmYtODcyODhlYjZmYzA0", ctrlConn)
+	filename, size, err := download(sessionId, "M2M2M2FhM2UtZDNjOC00ZDAxLTkyOWEtM2VkMWYwYTRhNWI0", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +162,7 @@ func download(sessionId string, fileId string, ctrlConn net.Conn) (string, int, 
 		SessionId: sessionId,
 		FileId:    fileId,
 	}
-	binary.Write(ctrlConn, binary.BigEndian, uint16(5))
+	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
 	req := jsonMarshal(file)
 	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
 	ctrlConn.Write(req)
