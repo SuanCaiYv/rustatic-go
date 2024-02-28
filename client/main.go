@@ -19,11 +19,11 @@ func main() {
 		InsecureSkipVerify: true,
 	}
 
-	ctrlConn, err := tls.Dial("tcp", "106.54.221.36:8190", config)
+	ctrlConn, err := tls.Dial("tcp", "127.0.0.1:8190", config)
 	if err != nil {
 		panic(fmt.Sprintf("control server connect error: %s", err))
 	}
-	dataConn, err := net.Dial("tcp", "106.54.221.36:8191")
+	dataConn, err := net.Dial("tcp", "127.0.0.1:8191")
 	if err != nil {
 		panic(fmt.Sprintf("data server connect error: %s", err))
 	}
@@ -41,7 +41,7 @@ func main() {
 	//}
 	//fmt.Println(fileId)
 	//upload0(filepath, dataConn)
-	filename, size, err := download(sessionId, "ODMwYjVlN2ItMTMxOS00YjM3LWI4MGEtN2U4ZTk2ZTU4ZDE2", ctrlConn)
+	filename, size, err := download(sessionId, "OTcxNjU3MTgtOWEzZS00YWQ5LWE1ZjctNzMwNGVkMjNlMjM1", ctrlConn)
 	if err != nil {
 		panic(err)
 	}

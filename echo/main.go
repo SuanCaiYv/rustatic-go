@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 func main() {
@@ -16,12 +17,14 @@ func main() {
 	buf := make([]byte, 1024*1024*32)
 	total := 0
 
+	t := time.Now()
 	for {
-		n, _ := conn.Read(buf)
+		n, _ := conn.Read(buf[0:])
 		total += n
-		if n == 0 {
+		fmt.Println("total:", total)
+		if total == 48845931 {
 			break
 		}
-		fmt.Println("total:", total)
 	}
+	fmt.Println("time:", time.Now().Sub(t).String())
 }
