@@ -34,14 +34,14 @@ func main() {
 		panic(err)
 	}
 	initDataConn(sessionId, dataConn)
-	//filepath := "/Users/slma/Downloads/dotnet-runtime-7.0.13-osx-arm64.pkg"
+	//filepath := "/Users/slma/Downloads/网易云音乐.zip"
 	//fileId, err := upload(sessionId, filepath, ctrlConn, dataConn)
 	//if err != nil {
 	//	panic(err)
 	//}
 	//fmt.Println(fileId)
 	//upload0(filepath, dataConn)
-	filename, size, err := download(sessionId, "OTcxNjU3MTgtOWEzZS00YWQ5LWE1ZjctNzMwNGVkMjNlMjM1", ctrlConn)
+	filename, size, err := download(sessionId, "MmZjMTk2MTMtNWRmMy00ZmUzLWIzNmYtODcyODhlYjZmYzA0", ctrlConn)
 	if err != nil {
 		panic(err)
 	}
