@@ -34,10 +34,11 @@ func main() {
 		username = arr[1]
 		password = arr[2]
 	}
-	fmt.Println("📄Welcome to Rustatic! Tiny and fast file driver for personal using.😎")
+	fmt.Println("📄 Welcome to Rustatic! Tiny and fast file driver for personal using. 😎")
 
 	if len(ip) != 0 && len(username) != 0 && len(password) != 0 {
-		fmt.Println("🫨Seems that you have saved your server address and login information. Do you want to use them? (Yes/No)")
+		fmt.Println("🫨 Seems that you have saved your server address and login information. Do you want to use them? (Yes/No)")
+		fmt.Print("📝 ")
 		var confirm string
 		fmt.Scanln(&confirm)
 		if confirm != "Yes" {
@@ -60,11 +61,11 @@ func main() {
 			}
 			if retry > 5 {
 				fmt.Println("I'm sorry, but I can't connect to the server. " +
-					"Please check your server address and make sure the port 8190 and 8191 are open.🥺")
+					"Please check your server address and make sure the port 8190 and 8191 are open. 🥺")
 				os.Exit(1)
 			}
 			time.Sleep(2 * time.Second)
-			fmt.Println("Please waiting, I'm connecting to my server friend.🤗")
+			fmt.Println("Please waiting, I'm connecting to my server friend. 🤗")
 			retry += 1
 		}
 	}()
@@ -97,10 +98,11 @@ func main() {
 		fmt.Println("Login successfully.")
 	}
 
-	fmt.Printf("All supported operations are:\n✈️upload   [up]\n🚚download [dl]\n⛰️list     [ls]\n" +
-		"🗑️delete   [de]\n🎮login    [lg]\n🧑‍💻sign     [sg]\n")
+	fmt.Printf("All supported operations are:\n🛫 upload     [up]\n🚚 download   [dl]\n📒 list       [ls]\n" +
+		"🪦 delete     [de]\n🚁 login      [lg]\n🚀 sign       [sg]\n🤙 remeber me [re]\n")
 	fmt.Println("😘")
-	fmt.Println("Please input your operation type, such as upload with 'up' or 'upload'.🖇️")
+	fmt.Println("Please input your operation type, such as upload with 'up' or 'upload'.🎫")
+	fmt.Print("📝 ")
 	var op string
 	for {
 		fmt.Scanln(&op)
@@ -130,13 +132,16 @@ func main() {
 			fmt.Println("Invalid operation type. Please input your operation type again.")
 			continue
 		}
+		fmt.Println("Let's continue! 😋")
 	}
 }
 
 func lg() {
 	fmt.Println("Please input your username.")
+	fmt.Print("📝 ")
 	fmt.Scanln(&username)
 	fmt.Println("Please input your password.")
+	fmt.Print("📝 ")
 	fmt.Scanln(&password)
 	sessionId, err := login(username, password, ctrlConn)
 	if err != nil {
@@ -149,8 +154,10 @@ func lg() {
 
 func sg() {
 	fmt.Println("Please input your username.")
+	fmt.Print("📝 ")
 	fmt.Scanln(&username)
 	fmt.Println("Please input your password.")
+	fmt.Print("📝 ")
 	var password string
 	fmt.Scanln(&password)
 	sessionId, err := sign(username, password, ctrlConn)
@@ -159,7 +166,7 @@ func sg() {
 		return
 	}
 	initDataConn(sessionId, dataConn)
-	fmt.Println("Sign up successfully. (automatically login!)🥳")
+	fmt.Println("Sign up successfully. (automatically login!) 🥳")
 }
 
 func up() {
@@ -168,15 +175,15 @@ func up() {
 		return
 	}
 	fmt.Println("Please input your file path.")
+	fmt.Print("📝 ")
 	var filepath string
 	fmt.Scanln(&filepath)
 	fileSize, err := upload(filepath)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	upload0(filepath, fileSize)
-	fmt.Println("Upload finished.✈️")
+	fmt.Println("Upload finished. 🛫")
 }
 
 func dl() {
@@ -185,6 +192,7 @@ func dl() {
 		return
 	}
 	fmt.Println("Please input your target file index. Such as 123, 234 etc...")
+	fmt.Print("📝 ")
 	var fileId int
 	fmt.Scanln(&fileId)
 	if _, ok := fileMap[fileId]; !ok {
@@ -195,10 +203,10 @@ func dl() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(size)
+	fmt.Println("File total size:", size)
 	t := time.Now()
 	download0(filename, dataConn, size)
-	fmt.Printf("Download finished🚚, speed: %.4f MB/s\n", float64(size)/1024/1024/time.Now().Sub(t).Seconds())
+	fmt.Printf("Download finished 🚚, speed: %.4f MB/s\n", float64(size)/1024/1024/time.Now().Sub(t).Seconds())
 }
 
 func ls() {
@@ -221,6 +229,7 @@ func ls() {
 
 func re() {
 	fmt.Println("Please input 'Yes' to confirm.")
+	fmt.Print("📝 ")
 	var confirm string
 	fmt.Scanln(&confirm)
 	if confirm != "Yes" {
@@ -276,7 +285,8 @@ func sign(username string, password string, conn net.Conn) (string, error) {
 func upload(filepath string) (int, error) {
 	fileStat, err := os.Stat(filepath)
 	if err != nil {
-		panic(err)
+		fmt.Println("File not found.🙇")
+		return 0, err
 	}
 	fileSize := int(fileStat.Size())
 	fileName := fileStat.Name()
