@@ -187,3 +187,5 @@ func BenchmarkRustatic(b *testing.B) {
 		rustatic()
 	}
 }
+
+// go test -bench=. -benchtime=3s -count=3 .

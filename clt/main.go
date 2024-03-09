@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ var (
 )
 
 func main() {
+	inputHandler()
 	file, err := os.Open("rustatic.conf")
 	if err == nil {
 		data := make([]byte, 1024)
@@ -128,12 +130,26 @@ func main() {
 		case "re", "remember me":
 			fmt.Println("You are remembering me.")
 			re()
+		case "exit":
+			fmt.Println("Goodbye! 🥳")
+			return
 		default:
 			fmt.Println("Invalid operation type. Please input your operation type again.")
 			continue
 		}
 		fmt.Println("Let's continue! 😋")
+		fmt.Print("👉 ")
 	}
+}
+
+func inputHandler() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		fmt.Printf("\nGoodbye! 🥳")
+		os.Exit(0)
+	}()
 }
 
 func lg() {
@@ -178,6 +194,9 @@ func up() {
 	fmt.Print("📝 ")
 	var filepath string
 	fmt.Scanln(&filepath)
+	if filepath[0] == '"' && filepath[len(filepath)-1] == '"' {
+		filepath = filepath[1 : len(filepath)-1]
+	}
 	fileSize, err := upload(filepath)
 	if err != nil {
 		return
@@ -285,7 +304,7 @@ func sign(username string, password string, conn net.Conn) (string, error) {
 func upload(filepath string) (int, error) {
 	fileStat, err := os.Stat(filepath)
 	if err != nil {
-		fmt.Println("File not found.🙇")
+		fmt.Println("File not found. 🙇")
 		return 0, err
 	}
 	fileSize := int(fileStat.Size())
