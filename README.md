@@ -1,6 +1,6 @@
 首先是性能对比：
 
-![image-20240308232037792](/Users/joker/GolandProjects/rustatic-go/img/image-20240308232037792.png)
+![image-20240308232037792](./img/image-20240308232037792.png)
 
 大约提升了41%的性能，考虑到cache buffer预热之后，属于纯内存拷贝操作，符合预期。
 
@@ -57,9 +57,9 @@
 
 既然需要使用线程池去处理数据连接产生的文件读写，选择一个或者设计一个线程池就显得很有必要了。
 
-![image-20240309212949385](/Users/joker/GolandProjects/rustatic-go/img/image-20240309212949385.png)
+![image-20240309212949385](./img/image-20240309212949385.png)
 
-![image-20240309213456152](/Users/joker/GolandProjects/rustatic-go/img/image-20240309213456152.png)
+![image-20240309213456152](./img/image-20240309213456152.png)
 
 其中Automatic是为了此项目设计的线程池，Unblocking则是smol旗下的，还有经典的Threadpool以及Rayon。
 
@@ -77,7 +77,7 @@
 
 这里采用终端交互的形式，包括登陆，注册，上传，下载，列表等操作。
 
-![image-20240309214134981](/Users/joker/GolandProjects/rustatic-go/img/image-20240309214134981.png)
+![image-20240309214134981](./img/image-20240309214134981.png)
 
 [项目地址](https://github.com/SuanCaiYv/rustatic)
 
