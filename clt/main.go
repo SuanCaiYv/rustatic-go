@@ -159,7 +159,8 @@ func lg() {
 	fmt.Println("Please input your password.")
 	fmt.Print("📝 ")
 	fmt.Scanln(&password)
-	sessionId, err := login(username, password, ctrlConn)
+	var err error
+	sessionId, err = login(username, password, ctrlConn)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -176,7 +177,8 @@ func sg() {
 	fmt.Print("📝 ")
 	var password string
 	fmt.Scanln(&password)
-	sessionId, err := sign(username, password, ctrlConn)
+	var err error
+	sessionId, err = sign(username, password, ctrlConn)
 	if err != nil {
 		fmt.Println(err)
 		return
