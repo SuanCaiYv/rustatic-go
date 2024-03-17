@@ -346,13 +346,16 @@ func upload0(filepath string, size int) {
 	defer file.Close()
 	buffer := make([]byte, 4096)
 	total := 0
+	d := make(chan struct{}, 1)
 	go func() {
-		for {
-			time.Sleep(time.Second)
-			if total == size {
-				break
-			}
-			fmt.Printf("upload percentage: %6.2f%%\n", float64(total)/float64(size)*100)
+		t := time.Tick(time.Second)
+		select {
+		case <-t:
+			fmt.Printf("\rupload percentage: %6.2f%%", float64(total)/float64(size)*100)
+		case <-d:
+			fmt.Println()
+			<-d
+			return
 		}
 	}()
 	for {
@@ -370,6 +373,11 @@ func upload0(filepath string, size int) {
 		}
 		dataConn.Write(buffer[:n])
 	}
+	if total != size {
+		fmt.Println("File size fatal, total:", total, "size:", size)
+	}
+	d <- struct{}{}
+	d <- struct{}{}
 }
 
 func download(fileId string) (string, int, error) {
@@ -402,13 +410,18 @@ func download0(filename string, dataConn net.Conn, size int) {
 	}
 	buffer := make([]byte, 1024*1024*4)
 	total := 0
+	d := make(chan struct{}, 1)
 	go func() {
+		t := time.Tick(time.Second)
 		for {
-			time.Sleep(time.Second)
-			if total == size {
-				break
+			select {
+			case <-t:
+				fmt.Printf("\rdownload percentage: %6.2f%%", float64(total)/float64(size)*100)
+			case <-d:
+				fmt.Println()
+				<-d
+				return
 			}
-			fmt.Printf("download percentage: %6.2f%%\n", float64(total)/float64(size)*100)
 		}
 	}()
 	for {
@@ -429,6 +442,8 @@ func download0(filename string, dataConn net.Conn, size int) {
 	if total != size {
 		fmt.Println("File size fatal, total:", total, "size:", size)
 	}
+	d <- struct{}{}
+	d <- struct{}{}
 }
 
 func listFiles() ([][]string, error) {
