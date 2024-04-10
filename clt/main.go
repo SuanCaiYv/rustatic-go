@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	langFlag  int
 	ip        string
 	ctrlConn  net.Conn
 	dataConn  net.Conn
@@ -37,18 +38,39 @@ func main() {
 		password = arr[2]
 	}
 	fmt.Println("📄 Welcome to Rustatic! Tiny and fast file driver for personal using. 😎")
+	fmt.Println("Choose you language: 🇨🇳 中文[1] 🇺🇸 English[2], default is English. 🌍. Input number directly/直接输入数字")
+	fmt.Print("📝 ")
+	var lang string
+	fmt.Scanln(&lang)
+
+	langFlag = 2
+	if lang == "1" {
+		langFlag = 1
+	}
 
 	if len(ip) != 0 && len(username) != 0 && len(password) != 0 {
-		fmt.Println("🫨 Seems that you have saved your server address and login information. Do you want to use them? (Yes/No)")
+		if langFlag == 1 {
+			fmt.Println("🫨 看起来你已经保存了服务器地址和登录信息。你想使用它们吗？(Yes/No)")
+		} else {
+			fmt.Println("🫨 Seems that you have saved your server address and login information. Do you want to use them? (Yes/No)")
+		}
 		fmt.Print("📝 ")
 		var confirm string
 		fmt.Scanln(&confirm)
 		if confirm != "Yes" {
-			fmt.Println("Please tell me your server address, just ip only.🖥️")
+			if langFlag == 1 {
+				fmt.Println("🖥️ 请告诉我你的服务器地址，只需要IP即可。")
+			} else {
+				fmt.Println("🖥️ Please tell me your server address, just ip only.")
+			}
 			fmt.Scanln(&ip)
 		}
 	} else {
-		fmt.Println("Please tell me your server address, just ip only.🖥️")
+		if langFlag == 1 {
+			fmt.Println("🖥️ 请告诉我你的服务器地址，只需要IP即可。🖥️")
+		} else {
+			fmt.Println("🖥️ Please tell me your server address, just ip only.🖥️")
+		}
 		fmt.Scanln(&ip)
 	}
 
@@ -62,12 +84,20 @@ func main() {
 				break
 			}
 			if retry > 5 {
-				fmt.Println("I'm sorry, but I can't connect to the server. " +
-					"Please check your server address and make sure the port 8190 and 8191 are open. 🥺")
+				if langFlag == 1 {
+					fmt.Println("对不起，我无法连接到服务器。请检查你的服务器地址，确保端口 8190 和 8191 是开放的。🥺")
+				} else {
+					fmt.Println("I'm sorry, but I can't connect to the server. " +
+						"Please check your server address and make sure the port 8190 and 8191 are open. 🥺")
+				}
 				os.Exit(1)
 			}
 			time.Sleep(2 * time.Second)
-			fmt.Println("Please waiting, I'm connecting to my server friend. 🤗")
+			if langFlag == 1 {
+				fmt.Println("请稍等，我正在连接到我的服务器朋友。🤗")
+			} else {
+				fmt.Println("Please waiting, I'm connecting to my server friend. 🤗")
+			}
 			retry += 1
 		}
 	}()
@@ -100,44 +130,89 @@ func main() {
 		fmt.Println("Login successfully.")
 	}
 
-	fmt.Printf("All supported operations are:\n🛫 upload     [up]\n🚚 download   [dl]\n📒 list       [ls]\n" +
-		"🪦 delete     [de]\n🚁 login      [lg]\n🚀 sign       [sg]\n🤙 remeber me [re]\n")
+	if langFlag == 1 {
+		fmt.Printf("📝 所有支持的操作有:\n🛫 上传   [up]\n🚚 下载   [dl]\n📒 列表   [ls]\n" +
+			"🪦 删除   [de]\n🚁 登录   [lg]\n🚀 注册   [sg]\n🤙 记住我 [re]\n")
+	} else {
+		fmt.Printf("📝 All supported operations are:\n🛫 upload     [up]\n🚚 download   [dl]\n📒 list       [ls]\n" +
+			"🪦 delete     [de]\n🚁 login      [lg]\n🚀 sign       [sg]\n🤙 remeber me [re]\n")
+	}
 	fmt.Println("😘")
-	fmt.Println("Please input your operation type, such as upload with 'up' or 'upload'.🎫")
+	if langFlag == 1 {
+		fmt.Println("📝 请输入你的操作类型，如上传 'up' 或 'upload'。")
+	} else {
+		fmt.Println("📝 Please input your operation type, such as upload with 'up' or 'upload'.")
+	}
 	fmt.Print("📝 ")
 	var op string
 	for {
 		fmt.Scanln(&op)
 		switch op {
 		case "up", "upload":
-			fmt.Println("You are uploading a file.")
+			if langFlag == 1 {
+				fmt.Println("上传文件")
+			} else {
+				fmt.Println("You are uploading a file.")
+			}
 			up()
 		case "dl", "download":
-			fmt.Println("You are downloading a file.")
+			if langFlag == 1 {
+				fmt.Println("下载文件")
+			} else {
+				fmt.Println("You are downloading a file.")
+			}
 			dl()
 		case "ls", "list":
-			fmt.Println("You are listing files.")
+			if langFlag == 1 {
+				fmt.Println("查看文件列表")
+			} else {
+				fmt.Println("You are listing files.")
+			}
 			ls()
 		case "de", "delete":
-			fmt.Println("You are deleting a file.")
+			if langFlag == 1 {
+				fmt.Println("删除文件")
+			} else {
+				fmt.Println("You are deleting a file.")
+			}
 			fmt.Println("This operation is not supported yet.")
 		case "lg", "login":
-			fmt.Println("You are logging in.")
+			if langFlag == 1 {
+				fmt.Println("登录中... ...")
+			} else {
+				fmt.Println("You are logging in.")
+			}
 			lg()
 		case "sg", "sign":
-			fmt.Println("You are new here!")
+			if langFlag == 1 {
+				fmt.Println("哇哦🎉新来的！")
+			} else {
+				fmt.Println("You are new here!")
+			}
 			sg()
 		case "re", "remember me":
-			fmt.Println("You are remembering me.")
+			if langFlag == 1 {
+				fmt.Println("记住账号？")
+			} else {
+				fmt.Println("You are remembering me.")
+			}
 			re()
 		case "exit":
 			fmt.Println("Goodbye! 🥳")
 			return
 		default:
-			fmt.Println("Invalid operation type. Please input your operation type again.")
+			if langFlag == 1 {
+				fmt.Println("无效的操作类型，请重新输入你的操作类型。")
+			} else {
+				fmt.Println("Invalid operation type. Please input your operation type again.")
+			}
 			continue
 		}
-		fmt.Println("Let's continue! 😋")
+		if langFlag == 1 {
+			fmt.Println("继续吗？😋")
+		} else {
+			fmt.Println("Let's continue! 😋")
+		}
 		fmt.Print("👉 ")
 	}
 }
@@ -153,10 +228,18 @@ func inputHandler() {
 }
 
 func lg() {
-	fmt.Println("Please input your username.")
+	if langFlag == 1 {
+		fmt.Println("请输入你的用户名。")
+	} else {
+		fmt.Println("Please input your username.")
+	}
 	fmt.Print("📝 ")
 	fmt.Scanln(&username)
-	fmt.Println("Please input your password.")
+	if langFlag == 1 {
+		fmt.Println("请输入你的密码。")
+	} else {
+		fmt.Println("Please input your password.")
+	}
 	fmt.Print("📝 ")
 	fmt.Scanln(&password)
 	var err error
@@ -243,7 +326,12 @@ func ls() {
 	fileMap = make(map[int]string)
 	for i, file := range files {
 		size, _ := strconv.Atoi(file[1])
-		fmt.Printf("File index: %3d, size: %s, filename: %s\n", i, formatSize(size), file[0])
+		tag, _ := strconv.Atoi(file[2])
+		if tag == 0 {
+			fmt.Printf("File index: %3d, size: %s, filename: %s\n", i, formatSize(size), file[0])
+		} else {
+			fmt.Printf("File index: %3d, size: %s, filename: %s-[%d]\n", i, formatSize(size), file[0], tag)
+		}
 		fileMap[i] = file[5]
 	}
 }
@@ -349,13 +437,15 @@ func upload0(filepath string, size int) {
 	d := make(chan struct{}, 1)
 	go func() {
 		t := time.Tick(time.Second)
-		select {
-		case <-t:
-			fmt.Printf("\rupload percentage: %6.2f%%", float64(total)/float64(size)*100)
-		case <-d:
-			fmt.Println()
-			<-d
-			return
+		for {
+			select {
+			case <-t:
+				fmt.Printf("\rupload percentage: %6.2f%%", float64(total)/float64(size)*100)
+			case <-d:
+				fmt.Println()
+				<-d
+				return
+			}
 		}
 	}()
 	for {
@@ -456,9 +546,9 @@ func listFiles() ([][]string, error) {
 	if strings.HasPrefix(str, "ok ") {
 		var files [][]string
 		ll := bytes.Split(resp[3:], []byte(" "))
-		for i := 0; i < len(ll)-1; i += 6 {
-			arr := make([]string, 6)
-			for j := 0; j < 6; j++ {
+		for i := 0; i < len(ll)-1; i += 7 {
+			arr := make([]string, 7)
+			for j := 0; j < 7; j++ {
 				arr[j] = string(ll[i+j])
 			}
 			files = append(files, arr)
