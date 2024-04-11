@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"crypto/tls"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -325,14 +322,14 @@ func ls() {
 	}
 	fileMap = make(map[int]string)
 	for i, file := range files {
-		size, _ := strconv.Atoi(file[1])
-		tag, _ := strconv.Atoi(file[2])
+		size := file[1].(int)
+		tag := file[2].(int)
 		if tag == 0 {
 			fmt.Printf("File index: %3d, size: %s, filename: %s\n", i, formatSize(size), file[0])
 		} else {
 			fmt.Printf("File index: %3d, size: %s, filename: %s-[%d]\n", i, formatSize(size), file[0], tag)
 		}
-		fileMap[i] = file[5]
+		fileMap[i] = file[6].(string)
 	}
 }
 
@@ -349,58 +346,51 @@ func re() {
 	file.WriteString(ip + "\n" + username + "\n" + password)
 }
 
-func login(username string, password string, conn net.Conn) (string, error) {
+func login(username string, password string, conn net.Conn) (sessionId string, err error) {
 	item1 := []byte(username)
 	item2 := []byte(password)
 	writeReq(conn, 2, item1, item2)
 	resp, err := readResp(conn)
 	if err != nil {
-		return "", err
+		return
 	}
-	return string(resp[0]), nil
+	sessionId = string(resp[0])
+	return
 }
 
-func sign(username string, password string, conn net.Conn) (string, error) {
+func sign(username string, password string, conn net.Conn) (sessionId string, err error) {
 	item1 := []byte(username)
 	item2 := []byte(password)
 	writeReq(conn, 1, item1, item2)
 	resp, err := readResp(conn)
 	if err != nil {
-		return "", err
+		return
 	}
-	return string(resp[0]), nil
+	sessionId = string(resp[0])
+	return
 }
 
-func upload(filepath string) (int, error) {
+func upload(filepath string) (fileSize int, err error) {
 	fileStat, err := os.Stat(filepath)
 	if err != nil {
 		fmt.Println("File not found. 🙇")
 		return 0, err
 	}
-	fileSize := int(fileStat.Size())
+	fileSize = int(fileStat.Size())
 	fileName := fileStat.Name()
 	createAt := fileStat.ModTime().UnixMilli()
-	file := struct {
-		SessionId string `json:"session_id"`
-		FileName  string `json:"filename"`
-		FileSize  int    `json:"size"`
-		CreateAt  int64  `json:"create_at"`
-		UpdateAt  int64  `json:"update_at"`
-	}{
-		SessionId: sessionId,
-		FileName:  fileName,
-		FileSize:  fileSize,
-		CreateAt:  createAt,
-		UpdateAt:  createAt,
-	}
-	req := jsonMarshal(file)
-	binary.Write(ctrlConn, binary.BigEndian, uint16(3))
-	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	writeAll(ctrlConn, req)
-	resp := readToLine(ctrlConn)
-	str := string(resp)
-	if strings.HasPrefix(str, "err ") {
-		return 0, fmt.Errorf(string(resp[4:]))
+	item1 := []byte(sessionId)
+	item2 := []byte(fileName)
+	item3 := make([]byte, 8)
+	binary.BigEndian.PutUint64(item3, uint64(fileSize))
+	item4 := make([]byte, 8)
+	binary.BigEndian.PutUint64(item4, uint64(createAt))
+	item5 := make([]byte, 8)
+	binary.BigEndian.PutUint64(item5, uint64(createAt))
+	writeReq(ctrlConn, 3, item1, item2, item3, item4, item5)
+	_, err = readResp(ctrlConn)
+	if err != nil {
+		return 0, err
 	} else {
 		return fileSize, nil
 	}
@@ -450,26 +440,17 @@ func upload0(filepath string, size int) {
 	d <- struct{}{}
 }
 
-func download(fileId string) (string, int, error) {
-	file := struct {
-		SessionId string `json:"session_id"`
-		FileId    string `json:"link"`
-	}{
-		SessionId: sessionId,
-		FileId:    fileId,
-	}
-	req := jsonMarshal(file)
-	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
-	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	writeAll(ctrlConn, req)
-	resp := readToLine(ctrlConn)
-	str := string(resp)
-	if strings.HasPrefix(str, "err ") {
-		return "", 0, fmt.Errorf(string(resp[4:]))
+func download(fileId string) (filename string, size int, err error) {
+	item1 := []byte(sessionId)
+	item2 := []byte(fileId)
+	writeReq(ctrlConn, 4, item1, item2)
+	resp, err := readResp(ctrlConn)
+	if err != nil {
+		return
 	} else {
-		arr := strings.Split(str[3:], " ")
-		size, _ := strconv.Atoi(arr[1])
-		return arr[0], size, nil
+		filename = string(resp[0])
+		size = int(binary.BigEndian.Uint64(resp[1]))
+		return
 	}
 }
 
@@ -516,32 +497,23 @@ func download0(filename string, dataConn net.Conn, size int) {
 	d <- struct{}{}
 }
 
-func listFiles() ([][]string, error) {
-	user := struct {
-		Owner string `json:"owner"`
-	}{
-		Owner: username,
+func listFiles() (files [][]any, err error) {
+	item1 := []byte(username)
+	writeReq(ctrlConn, 6, item1)
+	resp, err := readResp(ctrlConn)
+	if err != nil {
+		return
 	}
-	req, _ := json.Marshal(user)
-	binary.Write(ctrlConn, binary.BigEndian, uint16(6))
-	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	writeAll(ctrlConn, req)
-	resp := readToLine(ctrlConn)
-	str := string(resp[0:3])
-	if strings.HasPrefix(str, "ok ") {
-		var files [][]string
-		ll := bytes.Split(resp[3:], []byte(" "))
-		for i := 0; i < len(ll)-1; i += 7 {
-			arr := make([]string, 7)
-			for j := 0; j < 7; j++ {
-				arr[j] = string(ll[i+j])
-			}
-			files = append(files, arr)
+	for i := 0; i < len(resp); i += 7 {
+		arr := make([]any, 7)
+		arr[0] = string(resp[i])
+		for j := 1; j < 6; j++ {
+			arr[j] = int(binary.BigEndian.Uint64(resp[i+j]))
 		}
-		return files, nil
-	} else {
-		return nil, fmt.Errorf(string(resp[4:]))
+		arr[6] = string(resp[i+6])
+		files = append(files, arr)
 	}
+	return
 }
 
 func initDataConn(sessionId string, conn net.Conn) {
