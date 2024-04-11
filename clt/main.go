@@ -350,45 +350,25 @@ func re() {
 }
 
 func login(username string, password string, conn net.Conn) (string, error) {
-	user := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: username,
-		Password: password,
+	item1 := []byte(username)
+	item2 := []byte(password)
+	writeReq(conn, 2, item1, item2)
+	resp, err := readResp(conn)
+	if err != nil {
+		return "", err
 	}
-	binary.Write(conn, binary.BigEndian, uint16(2))
-	req := jsonMarshal(user)
-	binary.Write(conn, binary.BigEndian, uint16(len(req)))
-	conn.Write(req)
-	resp := readToLine(conn)
-	str := string(resp)
-	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(string(resp[4:]))
-	} else {
-		return str[3:], nil
-	}
+	return string(resp[0]), nil
 }
 
 func sign(username string, password string, conn net.Conn) (string, error) {
-	user := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: username,
-		Password: password,
+	item1 := []byte(username)
+	item2 := []byte(password)
+	writeReq(conn, 1, item1, item2)
+	resp, err := readResp(conn)
+	if err != nil {
+		return "", err
 	}
-	binary.Write(conn, binary.BigEndian, uint16(1))
-	req := jsonMarshal(user)
-	binary.Write(conn, binary.BigEndian, uint16(len(req)))
-	conn.Write(req)
-	resp := readToLine(conn)
-	str := string(resp)
-	if strings.HasPrefix(str, "err ") {
-		return "", fmt.Errorf(string(resp[4:]))
-	} else {
-		return str[3:], nil
-	}
+	return string(resp[0]), nil
 }
 
 func upload(filepath string) (int, error) {
@@ -413,10 +393,10 @@ func upload(filepath string) (int, error) {
 		CreateAt:  createAt,
 		UpdateAt:  createAt,
 	}
-	binary.Write(ctrlConn, binary.BigEndian, uint16(3))
 	req := jsonMarshal(file)
+	binary.Write(ctrlConn, binary.BigEndian, uint16(3))
 	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	ctrlConn.Write(req)
+	writeAll(ctrlConn, req)
 	resp := readToLine(ctrlConn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
@@ -478,10 +458,10 @@ func download(fileId string) (string, int, error) {
 		SessionId: sessionId,
 		FileId:    fileId,
 	}
-	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
 	req := jsonMarshal(file)
+	binary.Write(ctrlConn, binary.BigEndian, uint16(4))
 	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	ctrlConn.Write(req)
+	writeAll(ctrlConn, req)
 	resp := readToLine(ctrlConn)
 	str := string(resp)
 	if strings.HasPrefix(str, "err ") {
@@ -537,10 +517,15 @@ func download0(filename string, dataConn net.Conn, size int) {
 }
 
 func listFiles() ([][]string, error) {
-	req := []byte(username)
+	user := struct {
+		Owner string `json:"owner"`
+	}{
+		Owner: username,
+	}
+	req, _ := json.Marshal(user)
 	binary.Write(ctrlConn, binary.BigEndian, uint16(6))
 	binary.Write(ctrlConn, binary.BigEndian, uint16(len(req)))
-	ctrlConn.Write(req)
+	writeAll(ctrlConn, req)
 	resp := readToLine(ctrlConn)
 	str := string(resp[0:3])
 	if strings.HasPrefix(str, "ok ") {
@@ -563,32 +548,74 @@ func initDataConn(sessionId string, conn net.Conn) {
 	conn.Write([]byte(sessionId + "\n"))
 }
 
-func jsonMarshal(data any) (output []byte) {
-	output, err := json.Marshal(data)
-	if err != nil {
-		panic(err)
+func writeAll(writer io.Writer, data []byte) {
+	idx := 0
+	l := len(data)
+	for {
+		n, err := writer.Write(data[idx:])
+		if err != nil {
+			panic(err)
+		}
+		idx += n
+		if idx == l {
+			return
+		}
 	}
-	return
 }
 
-func readToLine(reader io.Reader) []byte {
-	buffer := make([]byte, 4096)
+func writeReq(writer io.Writer, opCode int, req ...[]byte) {
+	binary.Write(writer, binary.BigEndian, uint16(opCode))
+	l := 0
+	for i := range req {
+		l += 2
+		l += len(req[i])
+	}
+	binary.Write(writer, binary.BigEndian, uint16(l))
+	for i := range req {
+		binary.Write(writer, binary.BigEndian, uint16(len(req[i])))
+		writeAll(writer, req[i])
+	}
+}
+
+func readAll(reader io.Reader, size int) []byte {
+	buffer := make([]byte, size)
 	idx := 0
 	for {
 		n, err := reader.Read(buffer[idx:])
 		if err != nil {
 			panic(err)
 		}
-		if n == 0 {
-			return nil
-		}
-		for i := idx; i < idx+n; i += 1 {
-			if buffer[i] == '\n' {
-				return buffer[:i]
-			}
-		}
 		idx += n
+		if idx == size {
+			return buffer
+		}
 	}
+}
+
+// readResp/ on ok: [ok data1 data2 data3 ...], on err: [err errorStr]
+func readResp(reader io.Reader) (resp [][]byte, err error) {
+	l := uint16(0)
+	binary.Read(reader, binary.BigEndian, &l)
+	if l == 0 {
+		return
+	}
+	for {
+		size := uint16(0)
+		binary.Read(reader, binary.BigEndian, &size)
+		resp = append(resp, readAll(reader, int(size)))
+		l -= 2
+		l -= size
+		if l == 0 {
+			break
+		}
+	}
+	if string(resp[0]) == "err" {
+		resp = make([][]byte, 0)
+		err = fmt.Errorf(string(resp[1]))
+	} else {
+		resp = resp[1:]
+	}
+	return
 }
 
 func formatSize(size int) string {
