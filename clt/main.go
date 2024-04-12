@@ -346,6 +346,38 @@ func re() {
 	file.WriteString(ip + "\n" + username + "\n" + password)
 }
 
+func so() {}
+
+func rn() {
+	if len(sessionId) == 0 {
+		fmt.Println("Please login first.")
+		return
+	}
+	fmt.Println("Please input your target file index. Such as 123, 234 etc...")
+	fmt.Print("📝 ")
+	var fileId int
+	fmt.Scanln(&fileId)
+	if _, ok := fileMap[fileId]; !ok {
+		fmt.Println("File index not found.")
+	}
+	fmt.Println("Please input new file name.")
+	fmt.Print("📝 ")
+	var newFilename string
+	fmt.Scanln(&newFilename)
+	err := rename(fileMap[fileId], newFilename)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Rename successfully.")
+	}
+}
+
+func de() {}
+
+func rs() {}
+
+func rm() {}
+
 func login(username string, password string, conn net.Conn) (sessionId string, err error) {
 	item1 := []byte(username)
 	item2 := []byte(password)
@@ -516,8 +548,41 @@ func listFiles() (files [][]any, err error) {
 	return
 }
 
+func rename(fileId string, newName string) (err error) {
+	item1 := []byte(sessionId)
+	item2 := []byte(fileId)
+	item3 := []byte(newName)
+	writeReq(ctrlConn, 7, item1, item2, item3)
+	_, err = readResp(ctrlConn)
+	return
+}
+
+func delete(fileId string) (err error) {
+	item1 := []byte(sessionId)
+	item2 := []byte(fileId)
+	writeReq(ctrlConn, 8, item1, item2)
+	_, err = readResp(ctrlConn)
+	return
+}
+
+func restore(fileId string) (err error) {
+	item1 := []byte(sessionId)
+	item2 := []byte(fileId)
+	writeReq(ctrlConn, 9, item1, item2)
+	_, err = readResp(ctrlConn)
+	return
+}
+
+func remove(fileId string) (err error) {
+	item1 := []byte(sessionId)
+	item2 := []byte(fileId)
+	writeReq(ctrlConn, 10, item1, item2)
+	_, err = readResp(ctrlConn)
+	return
+}
+
 func initDataConn(sessionId string, conn net.Conn) {
-	conn.Write([]byte(sessionId + "\n"))
+	writeAll(conn, []byte(sessionId+"\n"))
 }
 
 func writeAll(writer io.Writer, data []byte) {
