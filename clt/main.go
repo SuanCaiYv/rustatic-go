@@ -172,7 +172,7 @@ func main() {
 			} else {
 				fmt.Println("You are deleting a file.")
 			}
-			fmt.Println("This operation is not supported yet.")
+			de()
 		case "lg", "login":
 			if langFlag == 1 {
 				fmt.Println("登录中... ...")
@@ -194,6 +194,27 @@ func main() {
 				fmt.Println("You are remembering me.")
 			}
 			re()
+		case "rn", "rename file":
+			if langFlag == 1 {
+				fmt.Println("重命名文件？")
+			} else {
+				fmt.Println("You are renaming file.")
+			}
+			rn()
+		case "rs", "restore file":
+			if langFlag == 1 {
+				fmt.Println("恢复删除？")
+			} else {
+				fmt.Println("You are restoring file.")
+			}
+			rs()
+		case "rm", "remove file":
+			if langFlag == 1 {
+				fmt.Println("永久移除？")
+			} else {
+				fmt.Println("You are remove file.")
+			}
+			rm()
 		case "exit":
 			fmt.Println("Goodbye! 🥳")
 			return
@@ -321,16 +342,31 @@ func ls() {
 		return
 	}
 	fileMap = make(map[int]string)
+	ss1 := strings.Builder{}
+	ss2 := strings.Builder{}
 	for i, file := range files {
 		size := file[1].(int)
-		tag := file[2].(int)
-		if tag == 0 {
-			fmt.Printf("File index: %3d, size: %s, filename: %s\n", i, formatSize(size), file[0])
+		createAt := time.UnixMilli(int64(file[3].(int))).Format("2006-01-02 15:04:05")
+		deleteAt := file[5].(int)
+		s := fmt.Sprintf("File index: %3d, size: %s, upload on: %s, filename: %s", i, formatSize(size), createAt, file[0])
+		if deleteAt != 0 {
+			ss2.WriteString(s)
+			days := int((time.UnixMilli(int64(deleteAt)).Add(time.Duration(30) * time.Hour * 24).Sub(time.Now())).Hours() / 24)
+			if days < 3 {
+				ss2.WriteString(fmt.Sprintf(", remaining less than %2d days!!!", days))
+			} else {
+				ss2.WriteString(fmt.Sprintf(", remaining %2d days", days))
+			}
+			ss2.WriteRune('\n')
 		} else {
-			fmt.Printf("File index: %3d, size: %s, filename: %s-[%d]\n", i, formatSize(size), file[0], tag)
+			ss1.WriteString(s)
+			ss1.WriteRune('\n')
 		}
 		fileMap[i] = file[6].(string)
 	}
+	fmt.Print(ss1.String())
+	fmt.Println("In trash:")
+	fmt.Print(ss2.String())
 }
 
 func re() {
@@ -372,11 +408,72 @@ func rn() {
 	}
 }
 
-func de() {}
+func de() {
+	if len(sessionId) == 0 {
+		fmt.Println("Please login first.")
+		return
+	}
+	fmt.Println("Please input your target file index. Such as 123, 234 etc...")
+	fmt.Print("📝 ")
+	var fileId int
+	fmt.Scanln(&fileId)
+	if _, ok := fileMap[fileId]; !ok {
+		fmt.Println("File index not found.")
+	}
+	err := deleteF(fileMap[fileId])
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Delete successfully.")
+	}
+}
 
-func rs() {}
+func rs() {
+	if len(sessionId) == 0 {
+		fmt.Println("Please login first.")
+		return
+	}
+	fmt.Println("Please input your target file index. Such as 123, 234 etc...")
+	fmt.Print("📝 ")
+	var fileId int
+	fmt.Scanln(&fileId)
+	if _, ok := fileMap[fileId]; !ok {
+		fmt.Println("File index not found.")
+	}
+	err := restore(fileMap[fileId])
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Restore successfully.")
+	}
+}
 
-func rm() {}
+func rm() {
+	if len(sessionId) == 0 {
+		fmt.Println("Please login first.")
+		return
+	}
+	fmt.Println("Please input your target file index. Such as 123, 234 etc...")
+	fmt.Print("📝 ")
+	var fileId int
+	fmt.Scanln(&fileId)
+	if _, ok := fileMap[fileId]; !ok {
+		fmt.Println("File index not found.")
+	}
+	fmt.Println("Are you really want to delete this file forever? Yes/No")
+	var confirm string
+	fmt.Scanln(&confirm)
+	if confirm == "Yes" {
+	} else {
+		return
+	}
+	err := remove(fileMap[fileId])
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Remove successfully.")
+	}
+}
 
 func login(username string, password string, conn net.Conn) (sessionId string, err error) {
 	item1 := []byte(username)
@@ -557,7 +654,7 @@ func rename(fileId string, newName string) (err error) {
 	return
 }
 
-func delete(fileId string) (err error) {
+func deleteF(fileId string) (err error) {
 	item1 := []byte(sessionId)
 	item2 := []byte(fileId)
 	writeReq(ctrlConn, 8, item1, item2)
@@ -647,8 +744,8 @@ func readResp(reader io.Reader) (resp [][]byte, err error) {
 		}
 	}
 	if string(resp[0]) == "err" {
-		resp = make([][]byte, 0)
 		err = fmt.Errorf(string(resp[1]))
+		resp = make([][]byte, 0)
 	} else {
 		resp = resp[1:]
 	}
