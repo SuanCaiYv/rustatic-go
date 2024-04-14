@@ -763,3 +763,12 @@ func formatSize(size int) string {
 		return fmt.Sprintf("%6.2f GB", float64(size)/1024/1024/1024)
 	}
 }
+
+//2
+//127.0.0.1
+//lg
+//dev-user
+//123456
+//ls
+//up
+///Users/joker/rustatic/data/dev-user/test2.jpg
