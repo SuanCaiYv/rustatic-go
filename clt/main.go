@@ -107,6 +107,12 @@ func main() {
 		fmt.Println(fmt.Sprintf("control stream connect error: %s", err))
 		return
 	}
+	dataConn, err = net.Dial("tcp", ip+":8191")
+	if err != nil {
+		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
+		return
+	}
+	defer dataConn.Close()
 	defer ctrlConn.Close()
 	status = 1
 	<-wait
@@ -260,12 +266,6 @@ func lg() {
 		fmt.Println(err)
 		return
 	}
-	dataConn, err = net.Dial("tcp", ip+":8191")
-	if err != nil {
-		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
-		return
-	}
-	defer dataConn.Close()
 	initDataConn(sessionId, dataConn)
 	fmt.Println("Login successfully.🎮")
 }
@@ -284,12 +284,6 @@ func sg() {
 		fmt.Println(err)
 		return
 	}
-	dataConn, err = net.Dial("tcp", ip+":8191")
-	if err != nil {
-		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
-		return
-	}
-	defer dataConn.Close()
 	initDataConn(sessionId, dataConn)
 	fmt.Println("Sign up successfully. (automatically login!) 🥳")
 }
@@ -772,10 +766,8 @@ func formatSize(size int) string {
 }
 
 //2
-//127.0.0.1
+//23.94.98.164
 //lg
-//dev-user
-//123456
+//joker
+//123400
 //ls
-//up
-///Users/joker/rustatic/data/dev-user/test2.jpg
