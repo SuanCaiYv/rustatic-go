@@ -107,13 +107,7 @@ func main() {
 		fmt.Println(fmt.Sprintf("control stream connect error: %s", err))
 		return
 	}
-	dataConn, err = net.Dial("tcp", ip+":8191")
-	if err != nil {
-		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
-		return
-	}
 	defer ctrlConn.Close()
-	defer dataConn.Close()
 	status = 1
 	<-wait
 
@@ -266,6 +260,12 @@ func lg() {
 		fmt.Println(err)
 		return
 	}
+	dataConn, err = net.Dial("tcp", ip+":8191")
+	if err != nil {
+		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
+		return
+	}
+	defer dataConn.Close()
 	initDataConn(sessionId, dataConn)
 	fmt.Println("Login successfully.🎮")
 }
@@ -284,6 +284,12 @@ func sg() {
 		fmt.Println(err)
 		return
 	}
+	dataConn, err = net.Dial("tcp", ip+":8191")
+	if err != nil {
+		fmt.Println(fmt.Sprintf("data stream connect error: %s", err))
+		return
+	}
+	defer dataConn.Close()
 	initDataConn(sessionId, dataConn)
 	fmt.Println("Sign up successfully. (automatically login!) 🥳")
 }
@@ -680,6 +686,7 @@ func remove(fileId string) (err error) {
 
 func initDataConn(sessionId string, conn net.Conn) {
 	writeAll(conn, []byte(sessionId+"\n"))
+	readAll(conn, 4)
 }
 
 func writeAll(writer io.Writer, data []byte) {
