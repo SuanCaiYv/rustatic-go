@@ -680,7 +680,7 @@ func remove(fileId string) (err error) {
 
 func initDataConn(sessionId string, conn net.Conn) {
 	writeAll(conn, []byte(sessionId+"\n"))
-	readAll(conn, 4)
+	readAll(conn, 8)
 }
 
 func writeAll(writer io.Writer, data []byte) {
